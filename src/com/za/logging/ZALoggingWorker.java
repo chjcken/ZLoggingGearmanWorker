@@ -3,9 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package zalogging;
+package com.za.logging;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -21,11 +23,11 @@ import org.gearman.GearmanWorker;
  * @author datbt
  */
 public class ZALoggingWorker implements Runnable, GearmanFunction{
-    private boolean isStopped = false;
     private final Logger LOGGER;
     private final String LOG_NAME_PATTERN = "zalog.%u.%g.txt";
-    private final int LOG_FILE_SIZE = 1000000000;
+    private final int LOG_FILE_SIZE = 1000000000; //max size 1gb
     private final int LOG_FILE_COUNT = 1000;
+    private final String DELIMITER = " ";
     private Handler fileHandler;
     
     private final String GEARMAN_SERVER_HOST = "localhost";
@@ -37,6 +39,7 @@ public class ZALoggingWorker implements Runnable, GearmanFunction{
 
     public ZALoggingWorker(String name, String path) throws IOException {
         LOGGER = Logger.getLogger(name);
+        LOGGER.setLevel(Level.INFO);
         LOGGER.setUseParentHandlers(false);
         Handler _fileHandler = createFileHandler(path);
         LOGGER.addHandler(_fileHandler);
@@ -80,14 +83,21 @@ public class ZALoggingWorker implements Runnable, GearmanFunction{
     }
     
     public void stop(){
-        isStopped = true;
         worker.shutdown();
+        gearman.shutdown();
     }
     
-//    /**
-//     * @param args the command line arguments
-//     * @throws java.io.IOException
-//     */
+    private String doubleQuotationWrappingIfStringContainsSpace(String value){
+    	if (value.contains(" "))
+    		return "\"" + value + "\"";
+    	else 
+    		return value;
+    }
+    
+    /**
+     * @param args the command line arguments
+     * @throws java.io.IOException
+     */
 //    public static void main(String[] args) throws IOException {
 //        // TODO code application logic here
 //        new Thread(new ZALoggingWorker("runlog", "log1/")).start();
@@ -97,7 +107,14 @@ public class ZALoggingWorker implements Runnable, GearmanFunction{
     @Override
     public byte[] work(String string, byte[] bytes, 
             GearmanFunctionCallback gfc) throws Exception {
-        System.out.println(string);
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        ObjectInputStream ois = new ObjectInputStream(bais);
+        String[] logData = (String[])ois.readObject();
+        String log = "";
+        for (String val : logData){
+        	log += doubleQuotationWrappingIfStringContainsSpace(val) + DELIMITER;
+        }
+        LOGGER.info(log.trim());
         return null;
     }
 }
