@@ -78,11 +78,10 @@ public class ZALoggingWorker implements Runnable, GearmanFunction {
     }
 
     private String wrapWithDoubleQuotationIfStringContainsSpace(String value) {
-        if (value.contains(" ")) {
-            return "\"" + value + "\"";
-        } else {
+        if (value == null || !value.contains(" ")) {
             return value;
-        }
+        } 
+        return "\"" + value + "\"";
     }
 
     //TODO: code to write log here
@@ -92,6 +91,8 @@ public class ZALoggingWorker implements Runnable, GearmanFunction {
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
         ObjectInputStream ois = new ObjectInputStream(bais);
         String[] logData = (String[]) ois.readObject();
+        if (logData == null)
+        	return null;
         String log = "";
         for (String val : logData) {
             log += wrapWithDoubleQuotationIfStringContainsSpace(val) + DELIMITER;
