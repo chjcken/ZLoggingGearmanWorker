@@ -9,8 +9,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import org.gearman.Gearman;
 import org.gearman.GearmanFunction;
@@ -22,16 +24,17 @@ import org.gearman.GearmanWorker;
  *
  * @author datbt
  */
-public class ZALoggingWorker implements Runnable, GearmanFunction{
+public class ZALoggingWorker implements Runnable, GearmanFunction {
+
     private final Logger LOGGER;
     private final String LOG_NAME_PATTERN = "zalog.%u.%g.txt";
     private final int LOG_FILE_SIZE = 1000000000; //max size 1gb
     private final int LOG_FILE_COUNT = 1000;
     private final String DELIMITER = " ";
     private Handler fileHandler;
-    
+
     private final String GEARMAN_SERVER_HOST = "localhost";
-    private final int GEARMAN_SERVER_PORT = 5555;
+    public static final int GEARMAN_SERVER_PORT = 5555;
     private final String GEARMAN_FUNCTION_NAME = "writelog";
     private Gearman gearman;
     private GearmanServer server;
@@ -44,77 +47,66 @@ public class ZALoggingWorker implements Runnable, GearmanFunction{
         Handler _fileHandler = createFileHandler(path);
         LOGGER.addHandler(_fileHandler);
         this.fileHandler = _fileHandler;
-    } 
-    
+    }
+
     @Override
     public void run() {
-//        int i = 0;
-//        while(!isStopped){
-//            LOGGER.log(Level.INFO, "test log {0}", i++);
-//            if (i == 5000) try {
-//                changePath("log2/");
-//            } catch (IOException ex) {
-//                
-//            }
-//            if (i >10000) break;
-//        }
-        
         gearman = Gearman.createGearman();
         server = gearman.createGearmanServer(
                 GEARMAN_SERVER_HOST, GEARMAN_SERVER_PORT);
         worker = gearman.createGearmanWorker();
         worker.addFunction(GEARMAN_FUNCTION_NAME, this);
         worker.addServer(server);
-        
-        
     }
-    
-    private Handler createFileHandler(String path) throws IOException{
+
+    private Handler createFileHandler(String path) throws IOException {
         Handler _fileHandler = new FileHandler(path + LOG_NAME_PATTERN, LOG_FILE_SIZE, LOG_FILE_COUNT, true);
         _fileHandler.setFormatter(new ZALogFormatter());
         return _fileHandler;
     }
-    
-    public void changePath(String path) throws IOException{
+
+    public void changePath(String path) throws IOException {
         Handler _fileHandler = createFileHandler(path);
         LOGGER.addHandler(_fileHandler);
         LOGGER.removeHandler(this.fileHandler);
         this.fileHandler = _fileHandler;
     }
-    
-    public void stop(){
+
+    public void stop() {
         worker.shutdown();
         gearman.shutdown();
     }
-    
-    private String doubleQuotationWrappingIfStringContainsSpace(String value){
-    	if (value.contains(" "))
-    		return "\"" + value + "\"";
-    	else 
-    		return value;
+
+    private String wrapWithDoubleQuotationIfStringContainsSpace(String value) {
+        if (value.contains(" ")) {
+            return "\"" + value + "\"";
+        } else {
+            return value;
+        }
     }
-    
-    /**
-     * @param args the command line arguments
-     * @throws java.io.IOException
-     */
-//    public static void main(String[] args) throws IOException {
-//        // TODO code application logic here
-//        new Thread(new ZALoggingWorker("runlog", "log1/")).start();
-//    }
 
     //TODO: code to write log here
     @Override
-    public byte[] work(String string, byte[] bytes, 
+    public byte[] work(String string, byte[] bytes,
             GearmanFunctionCallback gfc) throws Exception {
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
         ObjectInputStream ois = new ObjectInputStream(bais);
-        String[] logData = (String[])ois.readObject();
+        String[] logData = (String[]) ois.readObject();
         String log = "";
-        for (String val : logData){
-        	log += doubleQuotationWrappingIfStringContainsSpace(val) + DELIMITER;
+        for (String val : logData) {
+            log += wrapWithDoubleQuotationIfStringContainsSpace(val) + DELIMITER;
         }
         LOGGER.info(log.trim());
         return null;
+    }
+
+    //log format class
+    class ZALogFormatter extends Formatter {
+        private final String NEWLINE = "\n";
+        
+        @Override
+        public String format(LogRecord lr) {
+            return formatMessage(lr) + NEWLINE;
+        }
     }
 }
