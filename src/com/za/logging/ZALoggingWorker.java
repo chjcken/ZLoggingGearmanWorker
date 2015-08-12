@@ -28,7 +28,7 @@ public class ZALoggingWorker implements Runnable, GearmanFunction {
 
     private final Logger LOGGER;
     private final String LOG_NAME_PATTERN = "zalog.%u.%g.txt";
-    private final int LOG_FILE_SIZE = 1000000000; //max size 1gb
+    private final int LOG_FILE_SIZE = 100000000; //max size 100mb
     private final int LOG_FILE_COUNT = 1000;
     private final String DELIMITER = " ";
     private Handler fileHandler;
@@ -77,11 +77,11 @@ public class ZALoggingWorker implements Runnable, GearmanFunction {
         gearman.shutdown();
     }
 
-    private String wrapWithDoubleQuotationIfStringContainsSpace(String value) {
+    private String replaceSpaceWithHyphen(String value) {
         if (value == null || !value.contains(" ")) {
             return value;
-        } 
-        return "\"" + value + "\"";
+        }
+        return value.trim().replaceAll(" ", "-");
     }
 
     //TODO: code to write log here
@@ -91,11 +91,12 @@ public class ZALoggingWorker implements Runnable, GearmanFunction {
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
         ObjectInputStream ois = new ObjectInputStream(bais);
         String[] logData = (String[]) ois.readObject();
-        if (logData == null)
-        	return null;
+        if (logData == null) {
+            return null;
+        }
         String log = "";
         for (String val : logData) {
-            log += wrapWithDoubleQuotationIfStringContainsSpace(val) + DELIMITER;
+            log += replaceSpaceWithHyphen(val) + DELIMITER;
         }
         LOGGER.info(log.trim());
         return null;
@@ -103,8 +104,9 @@ public class ZALoggingWorker implements Runnable, GearmanFunction {
 
     //log format class
     class ZALogFormatter extends Formatter {
+
         private final String NEWLINE = "\n";
-        
+
         @Override
         public String format(LogRecord lr) {
             return formatMessage(lr) + NEWLINE;

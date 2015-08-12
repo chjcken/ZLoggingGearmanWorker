@@ -18,7 +18,7 @@ import org.gearman.Gearman;
  *
  * @author phamdung
  */
-public class ZARouting {
+public class ZARouter {
 
     private final List<ZALoggingWorker> listWorker;
     private final Timer timer;
@@ -30,7 +30,7 @@ public class ZARouting {
 
     //ZAlog/year/month/day/
 
-    public ZARouting() {
+    public ZARouter() {
         listWorker = new ArrayList<>();
         
         timer = new Timer();
@@ -79,11 +79,11 @@ public class ZARouting {
     }
     
     private void configuratePath(){
-        Calendar calendar = Calendar.getInstance();
+        Calendar now = Calendar.getInstance();
         logPath = PARENT_FOLDER 
-                + calendar.get(Calendar.YEAR) + "/" 
-                + calendar.get(Calendar.MONTH) + "/" 
-                + calendar.get(Calendar.DAY_OF_MONTH) + "/";
+                + now.get(Calendar.YEAR) + "/" 
+                + now.get(Calendar.MONTH) + "/" 
+                + now.get(Calendar.DAY_OF_MONTH) + "/";
         new File(logPath).mkdirs();
     }
 
@@ -92,8 +92,21 @@ public class ZARouting {
     }
 
     public static void main(String[] args) {
-        //start routing with 2 worker for logging
-        new ZARouting().start(2);
+        int workerNum = 2;
+        if (args.length > 0){
+            try {
+                workerNum = Integer.parseInt(args[0]);
+            } catch (Exception e) {
+                workerNum = 2;
+            }
+            
+            if (workerNum < 1 || workerNum > 16){
+                workerNum = 2;
+            }
+        }   
+        
+        //start routing with default 2 worker for logging
+        new ZARouter().start(workerNum);
     }
 
     /**
