@@ -8,6 +8,7 @@ package com.za.logging;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.util.Date;
 import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -26,6 +27,7 @@ import org.gearman.GearmanWorker;
  */
 public class ZALoggingWorker implements Runnable, GearmanFunction {
 
+    private final String TAG = "[ZA Log Worker]\t";
     private final Logger LOGGER;
     private final String LOG_NAME_PATTERN = "zalog.%u.%g.txt";
     private final int LOG_FILE_SIZE = 100000000; //max size 100mb
@@ -57,6 +59,8 @@ public class ZALoggingWorker implements Runnable, GearmanFunction {
         worker = gearman.createGearmanWorker();
         worker.addFunction(GEARMAN_FUNCTION_NAME, this);
         worker.addServer(server);
+        
+        System.out.println(TAG + LOGGER.getName() + " is running...");
     }
 
     private Handler createFileHandler(String path) throws IOException {
@@ -65,16 +69,20 @@ public class ZALoggingWorker implements Runnable, GearmanFunction {
         return _fileHandler;
     }
 
-    public void changePath(String path) throws IOException {
+    public void changePath(String path) throws IOException {        
         Handler _fileHandler = createFileHandler(path);
         LOGGER.addHandler(_fileHandler);
         LOGGER.removeHandler(this.fileHandler);
         this.fileHandler = _fileHandler;
+        
+        System.out.println(TAG + LOGGER.getName() + " change path to: " + path + " at: " + new Date().toString());
     }
 
     public void stop() {
-        worker.shutdown();
-        gearman.shutdown();
+        if (worker != null)
+            worker.shutdown();
+        if (gearman != null)
+            gearman.shutdown();
     }
 
     private String replaceSpaceWithHyphen(String value) {

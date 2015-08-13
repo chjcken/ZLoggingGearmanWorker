@@ -20,6 +20,7 @@ import org.gearman.Gearman;
  */
 public class ZARouter {
 
+    private final String TAG = "[ZA Router]\t"; //for debug
     private final List<ZALoggingWorker> listWorker;
     private final Timer timer;
     private final Calendar tomorrow;
@@ -37,11 +38,11 @@ public class ZARouter {
         
         tomorrow = Calendar.getInstance();        
         tomorrow.set(Calendar.DATE, tomorrow.get(Calendar.DAY_OF_MONTH) + 1);
-        tomorrow.set(Calendar.HOUR, 00);
+        tomorrow.set(Calendar.HOUR_OF_DAY, 00);
         tomorrow.set(Calendar.MINUTE, 00);
         tomorrow.set(Calendar.SECOND, 00);
         
-        configuratePath();        
+        configuratePath();   
     }
     
     public void start(int workerNum){
@@ -53,13 +54,15 @@ public class ZARouter {
 //            return;//if gearman server fail to start -- exit
 //        }
         
+        System.out.println(TAG + "ZARouter started!");
+        
         //start workers
         for (int i = 0; i < workerNum; i++) {
             startNewWorker();
         }
         
         //start timer for routing
-        startRoutingTask();
+        startRoutingTask();        
     }
 
     private void startNewWorker() {
@@ -85,6 +88,7 @@ public class ZARouter {
                 + now.get(Calendar.MONTH) + "/" 
                 + now.get(Calendar.DAY_OF_MONTH) + "/";
         new File(logPath).mkdirs();
+        System.err.println(now.getTime());
     }
 
     private void startRoutingTask() {
@@ -118,7 +122,8 @@ public class ZARouter {
     class ChangePathTask extends TimerTask {
 
         @Override
-        public void run() {            
+        public void run() {      
+            System.out.println(TAG + "change path running!");
             configuratePath();
             for (ZALoggingWorker worker : listWorker) {
                 try {
