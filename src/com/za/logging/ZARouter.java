@@ -12,7 +12,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import org.gearman.Gearman;
+//import org.gearman.Gearman;
 
 /**
  *
@@ -76,10 +76,10 @@ public class ZARouter {
         }
     }
     
-    private void startGearmanServer() throws IOException{
-        Gearman gearman = Gearman.createGearman();
-        gearman.startGearmanServer(ZALoggingWorker.GEARMAN_SERVER_PORT);
-    }
+//    private void startGearmanServer() throws IOException{
+//        Gearman gearman = Gearman.createGearman();
+//        gearman.startGearmanServer(ZALoggingWorker.GEARMAN_SERVER_PORT);
+//    }
     
     private void configuratePath(){
         Calendar now = Calendar.getInstance();

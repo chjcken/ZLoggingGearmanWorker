@@ -9,6 +9,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Date;
+import java.util.List;
 import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -98,13 +99,13 @@ public class ZALoggingWorker implements Runnable, GearmanFunction {
             GearmanFunctionCallback gfc) throws Exception {
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
         ObjectInputStream ois = new ObjectInputStream(bais);
-        String[] logData = (String[]) ois.readObject();
+        List<?> logData = (List<?>) ois.readObject();
         if (logData == null) {
             return null;
         }
         String log = "";
-        for (String val : logData) {
-            log += replaceSpaceWithHyphen(val) + DELIMITER;
+        for (Object val : logData) {
+            log += replaceSpaceWithHyphen((String)val) + DELIMITER;
         }
         LOGGER.info(log.trim());
         return null;
